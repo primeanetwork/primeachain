@@ -12,6 +12,8 @@ import (
 	"strings"
 
 	"github.com/Fantom-foundation/lachesis-base/abft"
+	"github.com/Fantom-foundation/lachesis-base/inter/idx"
+	"github.com/Fantom-foundation/lachesis-base/kvdb/memorydb"
 	"github.com/Fantom-foundation/lachesis-base/utils/cachescale"
 	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/ethereum/go-ethereum/common"
@@ -28,6 +30,7 @@ import (
 	"github.com/Fantom-foundation/go-opera/gossip/gasprice"
 	"github.com/Fantom-foundation/go-opera/integration"
 	"github.com/Fantom-foundation/go-opera/integration/makegenesis"
+	"github.com/Fantom-foundation/go-opera/inter"
 	"github.com/Fantom-foundation/go-opera/opera/genesis"
 	"github.com/Fantom-foundation/go-opera/opera/genesisstore"
 	futils "github.com/Fantom-foundation/go-opera/utils"
@@ -205,7 +208,6 @@ func mayGetGenesisStore(ctx *cli.Context) *genesisstore.Store {
 		toWei := func(goldpn int64) *big.Int {
 			return new(big.Int).Mul(big.NewInt(goldpn), big.NewInt(1e18))
 		}
-		// Add your wallet allocations
 		builder.AddBalance(common.HexToAddress("0xC79DE6A1eefAA4325B71590585B4b056B0750e97"), toWei(31100))   // Governance 1
 		builder.AddBalance(common.HexToAddress("0xCEb07760b2b9797b7e31cfd648F7302925c28d58"), toWei(31100))   // Governance 2
 		builder.AddBalance(common.HexToAddress("0x2C1EB859B739829ea7D3B99f4445710EfBED2017"), toWei(31100))   // Governance 3
@@ -217,24 +219,24 @@ func mayGetGenesisStore(ctx *cli.Context) *genesisstore.Store {
 		builder.AddBalance(common.HexToAddress("0xeDDC1aD264D782A598DeB424d284DA751b0237eE"), toWei(31100))   // Test Wallet 2
 		builder.AddBalance(common.HexToAddress("0x44E3bA47fB9c036e3f9441F8c817d58f0d714c7F"), toWei(31100))   // Test Wallet 3
 		builder.AddBalance(common.HexToAddress("0xd2DEBaecF0591Ab97a4e1e8214fd357390f1879C"), big.NewInt(0))  // Accounting
-		used := toWei(31100*5 + 1244000 + 1680000 + 31100*3)                                                  // Total used
+		used := toWei(31100*5 + 1244000 + 1680000 + 31100*3)
 		remainder := new(big.Int).Sub(totalSupply, used)
 		builder.AddBalance(common.HexToAddress("0x44C41862AFe35E7ffA5d46D106E78e56282106D2"), remainder) // Treasury
 
-		g := genesis.Genesis{
-			Time:     big.NewInt(1710712800), // March 17, 2025, 10:00 PM UTC
-			GasLimit: 10000000,
+		head := genesis.Header{
+			GenesisTime: inter.Timestamp(1710712800), // March 17, 2025, 10:00 PM UTC
+			NetworkID:   698369,
+			GasLimit:    10000000,
 		}
-		builder.SetCurrentEpoch(2)
-		builder.Build(g)
-		return builder.GenesisStore()
+		builder.SetCurrentEpoch(idx.Epoch(2))
+		return builder.Build(head)
 
 	case ctx.GlobalIsSet(FakeNetFlag.Name):
 		_, num, err := parseFakeGen(ctx.GlobalString(FakeNetFlag.Name))
 		if err != nil {
 			log.Crit("Invalid flag", "flag", FakeNetFlag.Name, "err", err)
 		}
-		return makefakegenesis.FakeGenesisStore(num, futils.ToFtm(1000000000), futils.ToFtm(5000000))
+		return makegenesis.FakeGenesisStore(num, futils.ToFtm(1000000000), futils.ToFtm(5000000))
 	case ctx.GlobalIsSet(GenesisFlag.Name):
 		genesisPath := ctx.GlobalString(GenesisFlag.Name)
 		f, err := os.Open(genesisPath)
@@ -245,7 +247,6 @@ func mayGetGenesisStore(ctx *cli.Context) *genesisstore.Store {
 		if err != nil {
 			utils.Fatalf("Failed to read genesis file: %v", err)
 		}
-		// Existing validation logic...
 		g := genesisStore.Genesis()
 		gHeader := genesis.Header{
 			GenesisID:   g.GenesisID,
