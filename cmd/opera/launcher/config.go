@@ -82,12 +82,12 @@ var (
 
 	RPCGlobalGasCapFlag = cli.Uint64Flag{
 		Name:  "rpc.gascap",
-		Usage: "Sets a cap on gas that can be used in ftm_call/estimateGas (0=infinite)",
+		Usage: "Sets a cap on gas that can be used in goldpn_call/estimateGas (0=infinite)",
 		Value: gossip.DefaultConfig(cachescale.Identity).RPCGasCap,
 	}
 	RPCGlobalTxFeeCapFlag = cli.Float64Flag{
 		Name:  "rpc.txfeecap",
-		Usage: "Sets a cap on transaction fee (in FTM) that can be sent via the RPC APIs (0 = no cap)",
+		Usage: "Sets a cap on transaction fee (in GOLDPN) that can be sent via the RPC APIs (0 = no cap)",
 		Value: gossip.DefaultConfig(cachescale.Identity).RPCTxFeeCap,
 	}
 	RPCGlobalTimeoutFlag = cli.DurationFlag{
@@ -480,8 +480,8 @@ func defaultNodeConfig() node.Config {
 	cfg := NodeDefaultConfig
 	cfg.Name = clientIdentifier
 	cfg.Version = params.VersionWithCommit(gitCommit, gitDate)
-	cfg.HTTPModules = append(cfg.HTTPModules, "eth", "ftm", "dag", "abft", "web3")
-	cfg.WSModules = append(cfg.WSModules, "eth", "ftm", "dag", "abft", "web3")
+	cfg.HTTPModules = append(cfg.HTTPModules, "eth", "goldpn", "dag", "abft", "web3")
+	cfg.WSModules = append(cfg.WSModules, "eth", "goldpn", "dag", "abft", "web3")
 	cfg.IPCPath = "opera.ipc"
 	cfg.DataDir = DefaultDataDir()
 	return cfg
