@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"math/big"
 	"os"
 	"path"
 	"path/filepath"
@@ -26,7 +27,7 @@ import (
 	"github.com/Fantom-foundation/go-opera/gossip/emitter"
 	"github.com/Fantom-foundation/go-opera/gossip/gasprice"
 	"github.com/Fantom-foundation/go-opera/integration"
-	"github.com/Fantom-foundation/go-opera/integration/makefakegenesis"
+	"github.com/Fantom-foundation/go-opera/integration/makegenesis"
 	"github.com/Fantom-foundation/go-opera/opera/genesis"
 	"github.com/Fantom-foundation/go-opera/opera/genesisstore"
 	futils "github.com/Fantom-foundation/go-opera/utils"
@@ -198,6 +199,36 @@ func loadAllConfigs(file string, cfg *config) error {
 
 func mayGetGenesisStore(ctx *cli.Context) *genesisstore.Store {
 	switch {
+	case ctx.GlobalIsSet("networkid") && ctx.GlobalUint64("networkid") == 698369:
+		builder := makegenesis.NewGenesisBuilder(memorydb.NewProducer(""))
+		totalSupply := new(big.Int).Mul(big.NewInt(1e9), big.NewInt(1e18)) // 1B GOLDPN
+		toWei := func(goldpn int64) *big.Int {
+			return new(big.Int).Mul(big.NewInt(goldpn), big.NewInt(1e18))
+		}
+		// Add your wallet allocations
+		builder.AddBalance(common.HexToAddress("0xC79DE6A1eefAA4325B71590585B4b056B0750e97"), toWei(31100))   // Governance 1
+		builder.AddBalance(common.HexToAddress("0xCEb07760b2b9797b7e31cfd648F7302925c28d58"), toWei(31100))   // Governance 2
+		builder.AddBalance(common.HexToAddress("0x2C1EB859B739829ea7D3B99f4445710EfBED2017"), toWei(31100))   // Governance 3
+		builder.AddBalance(common.HexToAddress("0xF7bCeae4a6B59e451f97C6D91BA7115C8ed0c00d"), toWei(31100))   // Governance 4
+		builder.AddBalance(common.HexToAddress("0x68a87bA8cb51aC05422138f639171d36f831F27c"), toWei(31100))   // Governance 5
+		builder.AddBalance(common.HexToAddress("0x4C0F541D9e0b6026dcee2532F778dB15E52AA716"), toWei(1244000)) // Developer 1
+		builder.AddBalance(common.HexToAddress("0x8582102B6e433AEb76B4baA2247c8BB673054056"), toWei(1680000)) // Validator 1
+		builder.AddBalance(common.HexToAddress("0xC17CfBaa87Ec82a26c2Ed9e0206aBF8c74d39d21"), toWei(31100))   // Test Wallet 1
+		builder.AddBalance(common.HexToAddress("0xeDDC1aD264D782A598DeB424d284DA751b0237eE"), toWei(31100))   // Test Wallet 2
+		builder.AddBalance(common.HexToAddress("0x44E3bA47fB9c036e3f9441F8c817d58f0d714c7F"), toWei(31100))   // Test Wallet 3
+		builder.AddBalance(common.HexToAddress("0xd2DEBaecF0591Ab97a4e1e8214fd357390f1879C"), big.NewInt(0))  // Accounting
+		used := toWei(31100*5 + 1244000 + 1680000 + 31100*3)                                                  // Total used
+		remainder := new(big.Int).Sub(totalSupply, used)
+		builder.AddBalance(common.HexToAddress("0x44C41862AFe35E7ffA5d46D106E78e56282106D2"), remainder) // Treasury
+
+		g := genesis.Genesis{
+			Time:     big.NewInt(1710712800), // March 17, 2025, 10:00 PM UTC
+			GasLimit: 10000000,
+		}
+		builder.SetCurrentEpoch(2)
+		builder.Build(g)
+		return builder.GenesisStore()
+
 	case ctx.GlobalIsSet(FakeNetFlag.Name):
 		_, num, err := parseFakeGen(ctx.GlobalString(FakeNetFlag.Name))
 		if err != nil {
@@ -206,7 +237,6 @@ func mayGetGenesisStore(ctx *cli.Context) *genesisstore.Store {
 		return makefakegenesis.FakeGenesisStore(num, futils.ToFtm(1000000000), futils.ToFtm(5000000))
 	case ctx.GlobalIsSet(GenesisFlag.Name):
 		genesisPath := ctx.GlobalString(GenesisFlag.Name)
-
 		f, err := os.Open(genesisPath)
 		if err != nil {
 			utils.Fatalf("Failed to open genesis file: %v", err)
@@ -215,28 +245,25 @@ func mayGetGenesisStore(ctx *cli.Context) *genesisstore.Store {
 		if err != nil {
 			utils.Fatalf("Failed to read genesis file: %v", err)
 		}
-
-		// check if it's a trusted preset
-		{
-			g := genesisStore.Genesis()
-			gHeader := genesis.Header{
-				GenesisID:   g.GenesisID,
-				NetworkID:   g.NetworkID,
-				NetworkName: g.NetworkName,
-			}
-			for _, allowed := range AllowedOperaGenesis {
-				if allowed.Hashes.Equal(genesisHashes) && allowed.Header.Equal(gHeader) {
-					log.Info("Genesis file is a known preset", "name", allowed.Name)
-					goto notExperimental
-				}
-			}
-			if ctx.GlobalBool(ExperimentalGenesisFlag.Name) {
-				log.Warn("Genesis file doesn't refer to any trusted preset")
-			} else {
-				utils.Fatalf("Genesis file doesn't refer to any trusted preset. Enable experimental genesis with --genesis.allowExperimental")
-			}
-		notExperimental:
+		// Existing validation logic...
+		g := genesisStore.Genesis()
+		gHeader := genesis.Header{
+			GenesisID:   g.GenesisID,
+			NetworkID:   g.NetworkID,
+			NetworkName: g.NetworkName,
 		}
+		for _, allowed := range AllowedOperaGenesis {
+			if allowed.Hashes.Equal(genesisHashes) && allowed.Header.Equal(gHeader) {
+				log.Info("Genesis file is a known preset", "name", allowed.Name)
+				goto notExperimental
+			}
+		}
+		if ctx.GlobalBool(ExperimentalGenesisFlag.Name) {
+			log.Warn("Genesis file doesn't refer to any trusted preset")
+		} else {
+			utils.Fatalf("Genesis file doesn't refer to any trusted preset. Enable experimental genesis with --genesis.allowExperimental")
+		}
+	notExperimental:
 		return genesisStore
 	}
 	return nil
