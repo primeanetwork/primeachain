@@ -12,7 +12,9 @@ import (
 	"strings"
 
 	"github.com/Fantom-foundation/lachesis-base/abft"
+	"github.com/Fantom-foundation/lachesis-base/inter/ibr"
 	"github.com/Fantom-foundation/lachesis-base/inter/idx"
+	"github.com/Fantom-foundation/lachesis-base/inter/ier"
 	"github.com/Fantom-foundation/lachesis-base/kvdb/memorydb"
 	"github.com/Fantom-foundation/lachesis-base/utils/cachescale"
 	"github.com/ethereum/go-ethereum/cmd/utils"
@@ -29,8 +31,7 @@ import (
 	"github.com/Fantom-foundation/go-opera/gossip/emitter"
 	"github.com/Fantom-foundation/go-opera/gossip/gasprice"
 	"github.com/Fantom-foundation/go-opera/integration"
-	"github.com/Fantom-foundation/go-opera/integration/makegenesis"
-	"github.com/Fantom-foundation/go-opera/inter"
+	"github.com/Fantom-foundation/go-opera/integration/makefakegenesis"
 	"github.com/Fantom-foundation/go-opera/opera/genesis"
 	"github.com/Fantom-foundation/go-opera/opera/genesisstore"
 	futils "github.com/Fantom-foundation/go-opera/utils"
@@ -203,7 +204,7 @@ func loadAllConfigs(file string, cfg *config) error {
 func mayGetGenesisStore(ctx *cli.Context) *genesisstore.Store {
 	switch {
 	case ctx.GlobalIsSet("networkid") && ctx.GlobalUint64("networkid") == 698369:
-		builder := makegenesis.NewGenesisBuilder(memorydb.NewProducer(""))
+		builder := makefakegenesis.NewGenesisBuilder(memorydb.NewProducer(""))
 		totalSupply := new(big.Int).Mul(big.NewInt(1e9), big.NewInt(1e18)) // 1B GOLDPN
 		toWei := func(goldpn int64) *big.Int {
 			return new(big.Int).Mul(big.NewInt(goldpn), big.NewInt(1e18))
@@ -224,11 +225,20 @@ func mayGetGenesisStore(ctx *cli.Context) *genesisstore.Store {
 		builder.AddBalance(common.HexToAddress("0x44C41862AFe35E7ffA5d46D106E78e56282106D2"), remainder) // Treasury
 
 		head := genesis.Header{
-			GenesisTime: inter.Timestamp(1710712800), // March 17, 2025, 10:00 PM UTC
 			NetworkID:   698369,
-			GasLimit:    10000000,
+			NetworkName: "Primea Mainnet",
 		}
-		builder.SetCurrentEpoch(idx.Epoch(2))
+		builder.AddBlock(ibr.LlrIdxFullBlockRecord{
+			LlrFullBlockRecord: ibr.LlrFullBlockRecord{
+				Time:     inter.Timestamp(1710712800), // March 17, 2025, 10:00 PM UTC
+				GasLimit: 10000000,
+			},
+			Idx: idx.Block(1),
+		})
+		builder.SetCurrentEpoch(ier.LlrIdxFullEpochRecord{
+			LlrFullEpochRecord: ier.LlrFullEpochRecord{},
+			Idx:                idx.Epoch(2),
+		})
 		return builder.Build(head)
 
 	case ctx.GlobalIsSet(FakeNetFlag.Name):
@@ -236,7 +246,7 @@ func mayGetGenesisStore(ctx *cli.Context) *genesisstore.Store {
 		if err != nil {
 			log.Crit("Invalid flag", "flag", FakeNetFlag.Name, "err", err)
 		}
-		return makegenesis.FakeGenesisStore(num, futils.ToFtm(1000000000), futils.ToFtm(5000000))
+		return makefakegenesis.FakeGenesisStore(num, futils.ToFtm(1000000000), futils.ToFtm(5000000))
 	case ctx.GlobalIsSet(GenesisFlag.Name):
 		genesisPath := ctx.GlobalString(GenesisFlag.Name)
 		f, err := os.Open(genesisPath)
