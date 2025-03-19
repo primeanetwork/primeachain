@@ -12,9 +12,7 @@ import (
 	"strings"
 
 	"github.com/Fantom-foundation/lachesis-base/abft"
-	"github.com/Fantom-foundation/lachesis-base/inter/ibr"
 	"github.com/Fantom-foundation/lachesis-base/inter/idx"
-	"github.com/Fantom-foundation/lachesis-base/inter/ier"
 	"github.com/Fantom-foundation/lachesis-base/kvdb/memorydb"
 	"github.com/Fantom-foundation/lachesis-base/utils/cachescale"
 	"github.com/ethereum/go-ethereum/cmd/utils"
@@ -228,16 +226,13 @@ func mayGetGenesisStore(ctx *cli.Context) *genesisstore.Store {
 			NetworkID:   698369,
 			NetworkName: "Primea Mainnet",
 		}
-		builder.AddBlock(ibr.LlrIdxFullBlockRecord{
-			LlrFullBlockRecord: ibr.LlrFullBlockRecord{
-				Time:     inter.Timestamp(1710712800), // March 17, 2025, 10:00 PM UTC
-				GasLimit: 10000000,
-			},
-			Idx: idx.Block(1),
+		builder.AddBlock(makefakegenesis.LlrIdxFullBlockRecord{
+			Time:     inter.Timestamp(1710712800), // March 17, 2025, 10:00 PM UTC
+			GasLimit: 10000000,
+			Idx:      idx.Block(1),
 		})
-		builder.SetCurrentEpoch(ier.LlrIdxFullEpochRecord{
-			LlrFullEpochRecord: ier.LlrFullEpochRecord{},
-			Idx:                idx.Epoch(2),
+		builder.SetCurrentEpoch(makefakegenesis.LlrIdxFullEpochRecord{
+			Idx: idx.Epoch(2),
 		})
 		return builder.Build(head)
 
