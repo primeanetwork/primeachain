@@ -1,0 +1,5 @@
+bsc-core/build/
+bsc-core/node_modules/
+bsc-core/test/
+*.log
+*.tmp
