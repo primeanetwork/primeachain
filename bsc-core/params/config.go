@@ -139,6 +139,70 @@ var (
 		},
 	}
 
+	PrimeaMainNetChainConfig = &ChainConfig{
+		ChainID:             big.NewInt(698369),
+		HomesteadBlock:      big.NewInt(0),
+		EIP150Block:         big.NewInt(0),
+		EIP155Block:         big.NewInt(0),
+		EIP158Block:         big.NewInt(0),
+		ByzantiumBlock:      big.NewInt(0),
+		ConstantinopleBlock: big.NewInt(0),
+		PetersburgBlock:     big.NewInt(0),
+		IstanbulBlock:       big.NewInt(0),
+		MuirGlacierBlock:    big.NewInt(0),
+		RamanujanBlock:      big.NewInt(0),
+		NielsBlock:          big.NewInt(0),
+		MirrorSyncBlock:     big.NewInt(5184000),
+		BrunoBlock:          big.NewInt(13082000),
+		EulerBlock:          big.NewInt(18907621),
+		NanoBlock:           big.NewInt(21962149),
+		MoranBlock:          big.NewInt(22107423),
+		GibbsBlock:          big.NewInt(23846001),
+		PlanckBlock:         big.NewInt(27281024),
+		LubanBlock:          big.NewInt(29020050),
+		PlatoBlock:          big.NewInt(30720096),
+		BerlinBlock:         big.NewInt(31302048),
+		LondonBlock:         big.NewInt(31302048),
+		HertzBlock:          big.NewInt(31302048),
+	
+		Parlia: &ParliaConfig{
+			Period: 3,
+			Epoch:  200,
+		},
+	}
+
+	PrimeaTestNetChainConfig = &ChainConfig{
+		ChainID:             big.NewInt(1698369),
+		HomesteadBlock:      big.NewInt(0),
+		EIP150Block:         big.NewInt(0),
+		EIP155Block:         big.NewInt(0),
+		EIP158Block:         big.NewInt(0),
+		ByzantiumBlock:      big.NewInt(0),
+		ConstantinopleBlock: big.NewInt(0),
+		PetersburgBlock:     big.NewInt(0),
+		IstanbulBlock:       big.NewInt(0),
+		MuirGlacierBlock:    big.NewInt(0),
+		RamanujanBlock:      big.NewInt(0),
+		NielsBlock:          big.NewInt(0),
+		MirrorSyncBlock:     big.NewInt(5184000),
+		BrunoBlock:          big.NewInt(13082000),
+		EulerBlock:          big.NewInt(18907621),
+		NanoBlock:           big.NewInt(21962149),
+		MoranBlock:          big.NewInt(22107423),
+		GibbsBlock:          big.NewInt(23846001),
+		PlanckBlock:         big.NewInt(27281024),
+		LubanBlock:          big.NewInt(29020050),
+		PlatoBlock:          big.NewInt(30720096),
+		BerlinBlock:         big.NewInt(31302048),
+		LondonBlock:         big.NewInt(31302048),
+		HertzBlock:          big.NewInt(31302048),
+	
+		Parlia: &ParliaConfig{
+			Period: 3,
+			Epoch:  200,
+		},
+	}
+
 	BSCChainConfig = &ChainConfig{
 		ChainID:             big.NewInt(56),
 		HomesteadBlock:      big.NewInt(0),
