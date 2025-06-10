@@ -85,14 +85,14 @@ type ethstatsConfig struct {
 	URL string `toml:",omitempty"`
 }
 
-type gethConfig struct {
+type primeaConfig struct {
 	Eth      ethconfig.Config
 	Node     node.Config
 	Ethstats ethstatsConfig
 	Metrics  metrics.Config
 }
 
-func loadConfig(file string, cfg *gethConfig) error {
+func loadConfig(file string, cfg *primeaConfig) error {
 	f, err := os.Open(file)
 	if err != nil {
 		return err
@@ -114,15 +114,15 @@ func defaultNodeConfig() node.Config {
 	cfg.Version = params.VersionWithCommit(git.Commit, git.Date)
 	cfg.HTTPModules = append(cfg.HTTPModules, "eth")
 	cfg.WSModules = append(cfg.WSModules, "eth")
-	cfg.IPCPath = "geth.ipc"
+	cfg.IPCPath = "primea.ipc"
 	return cfg
 }
 
-// loadBaseConfig loads the gethConfig based on the given command line
+// loadBasePrimeaConfig loads the primeaConfig based on the given command line
 // parameters and config file.
-func loadBaseConfig(ctx *cli.Context) gethConfig {
+func loadBasePrimeaConfig(ctx *cli.Context) primeaConfig {
 	// Load defaults.
-	cfg := gethConfig{
+	cfg := primeaConfig{
 		Eth:     ethconfig.Defaults,
 		Node:    defaultNodeConfig(),
 		Metrics: metrics.DefaultConfig,
@@ -140,9 +140,9 @@ func loadBaseConfig(ctx *cli.Context) gethConfig {
 	return cfg
 }
 
-// makeConfigNode loads geth configuration and creates a blank node instance.
-func makeConfigNode(ctx *cli.Context) (*node.Node, gethConfig) {
-	cfg := loadBaseConfig(ctx)
+// makePrimeaConfigNode loads primea configuration and creates a blank node instance.
+func makePrimeaConfigNode(ctx *cli.Context) (*node.Node, primeaConfig) {
+	cfg := loadBasePrimeaConfig(ctx)
 	stack, err := node.New(&cfg.Node)
 	if err != nil {
 		utils.Fatalf("Failed to create the protocol stack: %v", err)
@@ -161,9 +161,9 @@ func makeConfigNode(ctx *cli.Context) (*node.Node, gethConfig) {
 	return stack, cfg
 }
 
-// makeFullNode loads geth configuration and creates the Ethereum backend.
-func makeFullNode(ctx *cli.Context) (*node.Node, ethapi.Backend) {
-	stack, cfg := makeConfigNode(ctx)
+// makeFullPrimeaNode loads primea configuration and creates the Ethereum backend.
+func makeFullPrimeaNode(ctx *cli.Context) (*node.Node, ethapi.Backend) {
+	stack, cfg := makePrimeaConfigNode(ctx)
 	if ctx.IsSet(utils.OverrideCancun.Name) {
 		v := ctx.Uint64(utils.OverrideCancun.Name)
 		cfg.Eth.OverrideCancun = &v
@@ -198,7 +198,7 @@ func makeFullNode(ctx *cli.Context) (*node.Node, ethapi.Backend) {
 
 // dumpConfig is the dumpconfig command.
 func dumpConfig(ctx *cli.Context) error {
-	_, cfg := makeConfigNode(ctx)
+	_, cfg := makePrimeaConfigNode(ctx)
 	comment := ""
 
 	if cfg.Eth.Genesis != nil {
@@ -225,7 +225,7 @@ func dumpConfig(ctx *cli.Context) error {
 	return nil
 }
 
-func applyMetricConfig(ctx *cli.Context, cfg *gethConfig) {
+func applyMetricConfig(ctx *cli.Context, cfg *primeaConfig) {
 	if ctx.IsSet(utils.MetricsEnabledFlag.Name) {
 		cfg.Metrics.Enabled = ctx.Bool(utils.MetricsEnabledFlag.Name)
 	}

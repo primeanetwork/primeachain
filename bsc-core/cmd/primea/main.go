@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with go-ethereum. If not, see <http://www.gnu.org/licenses/>.
 
-// geth is the official command-line client for Ethereum.
+// primea is the official command-line client for PrimeaChain.
 package main
 
 import (
@@ -48,7 +48,7 @@ import (
 )
 
 const (
-	clientIdentifier = "geth" // Client identifier to advertise over the network
+	clientIdentifier = "primea" // Client identifier to advertise over the network
 )
 
 var (
@@ -218,12 +218,12 @@ var (
 	}
 )
 
-var app = flags.NewApp("the go-ethereum command line interface")
+var app = flags.NewApp("the primea command line interface")
 
 func init() {
-	// Initialize the CLI app and start Geth
+	// Initialize the CLI app and start Primea
 	app.Action = geth
-	app.Copyright = "Copyright 2013-2023 The go-ethereum Authors and BSC Authors"
+	app.Copyright = "Copyright 2023 PrimeaChain Authors" // Or include original authors if legally required
 	app.Commands = []*cli.Command{
 		// See chaincmd.go:
 		initCommand,
@@ -293,8 +293,8 @@ func prepare(ctx *cli.Context) {
 	// If we're running a known preset, log it for convenience.
 	switch {
 	case ctx.IsSet(utils.DeveloperFlag.Name):
-		log.Info("Starting Geth in ephemeral dev mode...")
-		log.Warn(`You are running Geth in --dev mode. Please note the following:
+		log.Info("Starting Primea in ephemeral dev mode...")
+		log.Warn(`You are running Primea in --dev mode. Please note the following:
 
   1. This mode is only intended for fast, iterative development without assumptions on
      security or persistence.
@@ -311,16 +311,7 @@ func prepare(ctx *cli.Context) {
 `)
 
 	case !ctx.IsSet(utils.NetworkIdFlag.Name):
-		log.Info("Starting Geth on Ethereum mainnet...")
-	}
-	// If we're a full node on mainnet without --cache specified, bump default cache allowance
-	if ctx.String(utils.SyncModeFlag.Name) != "light" && !ctx.IsSet(utils.CacheFlag.Name) && !ctx.IsSet(utils.NetworkIdFlag.Name) {
-		// Make sure we're not on any supported preconfigured testnet either
-		if !ctx.IsSet(utils.DeveloperFlag.Name) {
-			// Nope, we're really on mainnet. Bump that cache up!
-			log.Info("Bumping default cache on mainnet", "provided", ctx.Int(utils.CacheFlag.Name), "updated", 4096)
-			ctx.Set(utils.CacheFlag.Name, strconv.Itoa(4096))
-		}
+		log.Info("Starting Primea node. Use --networkid to specify the chain.")
 	}
 	// If we're running a light client on any network, drop the cache to some meaningfully low amount
 	if ctx.String(utils.SyncModeFlag.Name) == "light" && !ctx.IsSet(utils.CacheFlag.Name) {
@@ -362,7 +353,7 @@ func startNode(ctx *cli.Context, stack *node.Node, backend ethapi.Backend, isCon
 	events := make(chan accounts.WalletEvent, 16)
 	stack.AccountManager().Subscribe(events)
 
-	// Create a client to interact with local geth node.
+	// Create a client to interact with local primea node.
 	rpcClient := stack.Attach()
 	ethClient := ethclient.NewClient(rpcClient)
 
@@ -425,13 +416,13 @@ func startNode(ctx *cli.Context, stack *node.Node, backend ethapi.Backend, isCon
 
 	// Start auxiliary services if enabled
 	if ctx.Bool(utils.MiningEnabledFlag.Name) {
-		// Mining only makes sense if a full Ethereum node is running
+		// Mining only makes sense if a full PrimeaChain node is running
 		if ctx.String(utils.SyncModeFlag.Name) == "light" {
 			utils.Fatalf("Light clients do not support mining")
 		}
 		ethBackend, ok := backend.(*eth.EthAPIBackend)
 		if !ok {
-			utils.Fatalf("Ethereum service not running")
+			utils.Fatalf("PrimeaChain service not running")
 		}
 		// Set the gas price to the limits from the CLI and start mining
 		gasprice := flags.GlobalBig(ctx, utils.MinerGasPriceFlag.Name)

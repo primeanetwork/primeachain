@@ -157,7 +157,7 @@ be gzipped.`,
 		}, utils.DatabasePathFlags),
 		Description: `
 The import-preimages command imports hash preimages from an RLP encoded stream.
-It's deprecated, please use "geth db import" instead.
+It's deprecated, please use "primea db import" instead.
 `,
 	}
 	exportPreimagesCommand = &cli.Command{
@@ -171,7 +171,7 @@ It's deprecated, please use "geth db import" instead.
 		}, utils.DatabasePathFlags),
 		Description: `
 The export-preimages command exports hash preimages to an RLP encoded stream.
-It's deprecated, please use "geth db export" instead.
+It's deprecated, please use "primea db export" instead.
 `,
 	}
 	dumpCommand = &cli.Command{
@@ -216,7 +216,7 @@ func initGenesis(ctx *cli.Context) error {
 		utils.Fatalf("invalid genesis file: %v", err)
 	}
 	// Open and initialise both full and light databases
-	stack, _ := makeConfigNode(ctx)
+	stack, _ := makePrimeaConfigNode(ctx)
 	defer stack.Close()
 
 	for _, name := range []string{"chaindata", "lightchaindata"} {
@@ -275,7 +275,7 @@ func createPorts(ipStr string, port int, size int) []int {
 }
 
 // Create config for node i in the cluster
-func createNodeConfig(baseConfig gethConfig, enodes []*enode.Node, ip string, port int, size int, i int) gethConfig {
+func createNodeConfig(baseConfig primeaConfig, enodes []*enode.Node, ip string, port int, size int, i int) primeaConfig {
 	baseConfig.Node.HTTPHost = ip
 	baseConfig.Node.P2P.ListenAddr = fmt.Sprintf(":%d", port)
 	baseConfig.Node.P2P.BootstrapNodes = make([]*enode.Node, size-1)
@@ -290,7 +290,7 @@ func createNodeConfig(baseConfig gethConfig, enodes []*enode.Node, ip string, po
 }
 
 // Create configs for nodes in the cluster
-func createNodeConfigs(baseConfig gethConfig, initDir string, ips []string, ports []int, size int) ([]gethConfig, error) {
+func createNodeConfigs(baseConfig primeaConfig, initDir string, ips []string, ports []int, size int) ([]primeaConfig, error) {
 	// Create the nodes
 	enodes := make([]*enode.Node, size)
 	for i := 0; i < size; i++ {
@@ -305,7 +305,7 @@ func createNodeConfigs(baseConfig gethConfig, initDir string, ips []string, port
 	}
 
 	// Create the configs
-	configs := make([]gethConfig, size)
+	configs := make([]primeaConfig, size)
 	for i := 0; i < size; i++ {
 		configs[i] = createNodeConfig(baseConfig, enodes, ips[i], ports[i], size, i)
 	}
@@ -357,7 +357,7 @@ func initNetwork(ctx *cli.Context) error {
 	}
 
 	// load config
-	var config gethConfig
+	var config primeaConfig
 	err = loadConfig(cfgFile, &config)
 	if err != nil {
 		return err
@@ -408,7 +408,7 @@ func dumpGenesis(ctx *cli.Context) error {
 		return nil
 	}
 	// dump whatever already exists in the datadir
-	stack, _ := makeConfigNode(ctx)
+	stack, _ := makePrimeaConfigNode(ctx)
 	for _, name := range []string{"chaindata", "lightchaindata"} {
 		db, err := stack.OpenDatabase(name, 0, 0, "", true)
 		if err != nil {
@@ -444,7 +444,7 @@ func importChain(ctx *cli.Context) error {
 	// Start system runtime metrics collection
 	go metrics.CollectProcessMetrics(3 * time.Second)
 
-	stack, _ := makeConfigNode(ctx)
+	stack, _ := makePrimeaConfigNode(ctx)
 	defer stack.Close()
 
 	chain, db := utils.MakeChain(ctx, stack, false)
@@ -519,7 +519,7 @@ func exportChain(ctx *cli.Context) error {
 		utils.Fatalf("This command requires an argument.")
 	}
 
-	stack, _ := makeConfigNode(ctx)
+	stack, _ := makePrimeaConfigNode(ctx)
 	defer stack.Close()
 
 	chain, _ := utils.MakeChain(ctx, stack, true)
@@ -558,7 +558,7 @@ func importPreimages(ctx *cli.Context) error {
 		utils.Fatalf("This command requires an argument.")
 	}
 
-	stack, _ := makeConfigNode(ctx)
+	stack, _ := makePrimeaConfigNode(ctx)
 	defer stack.Close()
 
 	db := utils.MakeChainDatabase(ctx, stack, false, false)
@@ -576,7 +576,7 @@ func exportPreimages(ctx *cli.Context) error {
 	if ctx.Args().Len() < 1 {
 		utils.Fatalf("This command requires an argument.")
 	}
-	stack, _ := makeConfigNode(ctx)
+	stack, _ := makePrimeaConfigNode(ctx)
 	defer stack.Close()
 
 	db := utils.MakeChainDatabase(ctx, stack, true, false)
@@ -648,7 +648,7 @@ func parseDumpConfig(ctx *cli.Context, stack *node.Node) (*state.DumpConfig, eth
 }
 
 func dump(ctx *cli.Context) error {
-	stack, _ := makeConfigNode(ctx)
+	stack, _ := makePrimeaConfigNode(ctx)
 	defer stack.Close()
 
 	conf, db, root, err := parseDumpConfig(ctx, stack)

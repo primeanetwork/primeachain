@@ -16,15 +16,20 @@
 
 package params
 
-// These are the multipliers for GOLDPN denominations.
-// Example: to convert 1 mGOLDPN to attoGOLDPN:
+// These are the multipliers for PRIM denominations.
+// Example: to convert 1 mPRIM to attoPRIM:
 //
-//     new(big.Int).Mul(value, big.NewInt(params.mGOLDPN))
+//     new(big.Int).Mul(value, big.NewInt(params.mPRIM))
 
 const (
-	attoGOLDPN = 1
-	mGOLDPN    = 1e9
-	GOLDPN     = 1e18
+	// attoPRIM is the smallest denomination of PRIM.
+	// 1 PRIM = 10^18 attoPRIM (similar to Wei for Ether)
+	attoPRIM = 1 // Smallest unit, equivalent to Wei or Jager
+	// kPRIM is 1000 attoPRIM. Not typically used directly in this const block.
+	// mPRIM is 1,000,000,000 attoPRIM (equivalent to GWei for Ether)
+	mPRIM = 1e9 // Equivalent to GWei (for gas prices)
+	// PRIM is the main unit of currency for PrimeaChain.
+	PRIM = 1e18 // Main unit, equivalent to Ether or BNB
 )
 
 
