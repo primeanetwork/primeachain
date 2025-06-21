@@ -1,5 +1,4 @@
----
-- name: Phase 1 - Prepare Servers for PrimeaChain
+- name: Phase 1 - Server Prepping for PrimeaChain
   hosts: all
   become: yes
   roles:

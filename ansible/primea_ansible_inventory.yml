@@ -1,19 +1,23 @@
 all:
   vars:
     ansible_user: superuser
-    ansible_python_interpreter: /usr/bin/python3
 
   children:
-    publicrpc:
+    public_rpc_nodes:
       hosts:
-        192.168.249.2:
+        prim-test-public-rpc:
+          ansible_host: 192.168.249.2
 
-    privaterpc:
+    private_rpc_nodes:
       hosts:
-        192.168.249.3:
+        prim-test-private-rpc:
+          ansible_host: 192.168.249.3
 
     validators:
       hosts:
-        192.168.249.4:
-        192.168.249.5:
-        192.168.249.6:
+        validator-1:
+          ansible_host: 192.168.249.4
+        validator-2:
+          ansible_host: 192.168.249.5
+        validator-3:
+          ansible_host: 192.168.249.6

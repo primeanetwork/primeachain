@@ -124,6 +124,16 @@
     mode: '0644'
   become: yes
 
+- name: Create empty known_hosts file if missing
+  copy:
+    content: ""
+    dest: /home/superuser/.ssh/known_hosts
+    owner: superuser
+    group: superuser
+    mode: '0644'
+    force: no
+  become: yes
+
 - name: Set correct owner on known_hosts (prevent SSH warnings)
   file:
     path: /home/superuser/.ssh/known_hosts
