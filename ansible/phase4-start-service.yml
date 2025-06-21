@@ -1,0 +1,29 @@
+---
+# Phase 4 - Start Geth Services on all node types (Public RPC, Private RPC, Validators)
+
+- name: Phase 4 - Start Public RPC Geth Service
+  hosts: public_rpc_nodes
+  become: yes
+  vars:
+    ansible_user: superuser
+  tasks:
+    - name: Include task to start geth on public RPC node
+      include_tasks: roles/init-geth/tasks/start_pub_rpc.yml
+
+- name: Phase 4 - Start Private RPC Geth Service
+  hosts: private_rpc_nodes
+  become: yes
+  vars:
+    ansible_user: superuser
+  tasks:
+    - name: Include task to start geth on private RPC node
+      include_tasks: roles/init-geth/tasks/start_priv_rpc.yml
+
+- name: Phase 4 - Start Validator Geth Services
+  hosts: validators
+  become: yes
+  vars:
+    ansible_user: superuser
+  tasks:
+    - name: Include task to start geth on validator node
+      include_tasks: roles/init-geth/tasks/start_validators.yml

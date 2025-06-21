@@ -1,0 +1,62 @@
+---
+# Phase 3 - Initialize Geth Chain (Public RPC)
+# This role is applied ONLY to public_rpc_nodes
+
+- name: Ensure correct ownership on /opt/primea (after snapshot)
+  file:
+    path: /opt/primea
+    owner: superuser
+    group: superuser
+    recurse: yes
+  become: yes
+
+- name: Pull latest PrimeaChain repo (in case of genesis updates)
+  git:
+    repo: git@github.com:primeanetwork/primeachain.git
+    dest: /opt/primea/primeachain
+    version: main
+    update: yes
+  become: yes
+  become_user: superuser
+
+- name: Verify testnet genesis file exists
+  stat:
+    path: /opt/primea/primeachain/ansible/files/testnet-genesis.json
+  register: genesis_check
+
+- name: Fail if genesis file is missing
+  fail:
+    msg: "testnet-genesis.json is missing in ansible/files/!"
+  when: not genesis_check.stat.exists
+
+- name: Delete previous chain data (safe for public RPC)
+  file:
+    path: /opt/primea/primeachain/bsc-core/data
+    state: absent
+  become: yes
+  become_user: superuser
+
+- name: Initialize geth with testnet genesis
+  shell: |
+    export PATH=/usr/local/go/bin:$PATH
+    /opt/primea/primeachain/bsc-core/build/bin/geth init \
+      --datadir=/opt/primea/primeachain/bsc-core/data \
+      /opt/primea/primeachain/ansible/files/testnet-genesis.json
+  args:
+    chdir: /opt/primea/primeachain/bsc-core
+  become: yes
+  become_user: superuser
+
+- name: Check if chain was initialized
+  stat:
+    path: /opt/primea/primeachain/bsc-core/data/geth
+  register: chain_data_check
+
+- name: Fail if Geth chain was not initialized properly
+  fail:
+    msg: "Geth data directory was not created. Init failed."
+  when: not chain_data_check.stat.exists
+
+- name: ✅ Geth initialization successful
+  debug:
+    msg: "✅ Geth testnet chain initialized on this node."

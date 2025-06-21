@@ -1,0 +1,64 @@
+# roles/init-chain/tasks/start_priv_rpc.yml
+
+- name: Stop old geth-priv-rpc service (if exists)
+  systemd:
+    name: geth-priv-rpc
+    state: stopped
+    enabled: false
+  ignore_errors: true
+
+- name: Remove old systemd unit file (if exists)
+  file:
+    path: /etc/systemd/system/geth-priv-rpc.service
+    state: absent
+
+- name: Create systemd service for geth-priv-rpc
+  copy:
+    dest: /etc/systemd/system/geth-priv-rpc.service
+    content: |
+      [Unit]
+      Description=Geth Private RPC Node (PrimeaChain)
+      After=network.target
+
+      [Service]
+      User=superuser
+      WorkingDirectory=/opt/primea/primeachain/bsc-core
+      ExecStart=/opt/primea/primeachain/bsc-core/build/bin/geth \
+        --datadir /opt/primea/primeachain/bsc-core/data \
+        --networkid 1698369 \
+        --http \
+        --http.addr "0.0.0.0" \
+        --http.port 8545 \
+        --http.vhosts "*" \
+        --http.api "eth,web3,net,admin" \
+        --metrics \
+        --pprof \
+        --nat "extip:192.168.249.3"
+      Restart=always
+      RestartSec=5
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Reload systemd daemon
+  command: systemctl daemon-reexec
+
+- name: Enable and start geth-priv-rpc service
+  systemd:
+    name: geth-priv-rpc
+    enabled: true
+    state: started
+
+- name: Wait 15 seconds after starting Geth
+  pause:
+    seconds: 15
+
+- name: Check if Geth process is running
+  shell: pgrep -f 'geth.*--datadir'
+  register: geth_status
+  failed_when: geth_status.rc != 0
+  changed_when: false
+
+- name: Confirm Geth started successfully
+  debug:
+    msg: "Geth is running with PID(s): {{ geth_status.stdout_lines }}"

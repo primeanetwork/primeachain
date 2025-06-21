@@ -1,6 +1,9 @@
 ---
-# Role Dependencies
-# This file defines dependencies for the server-prepping role
-# Currently no dependencies are required
+galaxy_info:
+  role_name: init_public_rpc
+  author: Rodrigo Herrera
+  description: Init chain with genesis (only public RPC)
+  license: MIT
+  min_ansible_version: 2.9
 
-dependencies: [] 
+dependencies: []

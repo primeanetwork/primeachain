@@ -1,0 +1,9 @@
+---
+galaxy_info:
+  role_name: server_p[repping]
+  author: Rodrigo Herrera
+  description: Prep the servers before cloning and building
+  license: MIT
+  min_ansible_version: 2.9
+
+dependencies: []

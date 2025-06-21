@@ -1,0 +1,41 @@
+# roles/init-chain/tasks/init_validators.yml
+
+- name: Ensure correct ownership on /opt/primea (after snapshot)
+  file:
+    path: /opt/primea
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    recurse: yes
+
+- name: Pull latest PrimeaChain repo (in case of genesis updates)
+  git:
+    repo: git@github.com:primeanetwork/primeachain.git
+    dest: /opt/primea/primeachain
+    version: main
+    force: yes
+    accept_hostkey: yes
+    key_file: /home/{{ ansible_user }}/.ssh/github_id_rsa
+  become: false
+
+- name: Verify testnet genesis file exists
+  stat:
+    path: /opt/primea/primeachain/ansible/files/testnet-genesis.json
+  register: genesis_file
+
+- name: Fail if genesis file is missing
+  fail:
+    msg: "testnet-genesis.json not found"
+  when: not genesis_file.stat.exists
+
+- name: Delete previous chain data (safe for validators)
+  file:
+    path: /opt/primea/primeachain/bsc-core/data
+    state: absent
+
+- name: Initialize Geth with testnet genesis
+  command: >
+    /opt/primea/primeachain/bsc-core/build/bin/geth
+    init --datadir=data
+    ../ansible/files/testnet-genesis.json
+  args:
+    chdir: /opt/primea/primeachain/bsc-core

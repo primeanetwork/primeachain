@@ -1,171 +1,62 @@
 ---
-# Server Prepping Role - Main Tasks
-# This role prepares Ubuntu servers for Primea blockchain deployment
+# Phase 3 - Initialize Geth Chain (Public RPC)
+# This role is applied ONLY to public_rpc_nodes
 
-- name: Update apt cache
-  apt:
-    update_cache: yes
-    cache_valid_time: 3600
-  become: yes
-
-- name: Upgrade all packages
-  apt:
-    upgrade: yes
-    autoremove: yes
-    autoclean: yes
-  become: yes
-
-- name: Remove default golang packages (if installed)
-  apt:
-    name: golang-go
-    state: absent
-  become: yes
-
-- name: Install required packages
-  apt:
-    name:
-      - git
-      - make
-      - curl
-      - ufw
-      - htop
-      - build-essential
-    state: present
-  become: yes
-
-# -------- GO VERSION FIXED TO 1.20.13 --------
-
-- name: Download Go 1.20.13 binary
-  get_url:
-    url: https://go.dev/dl/go1.20.13.linux-amd64.tar.gz
-    dest: /tmp/go.tar.gz
-    mode: '0644'
-  become: yes
-
-- name: Remove old Go installation
-  file:
-    path: /usr/local/go
-    state: absent
-  become: yes
-
-- name: Extract Go 1.20.13 to /usr/local
-  unarchive:
-    src: /tmp/go.tar.gz
-    dest: /usr/local
-    remote_src: yes
-  become: yes
-
-- name: Set Go environment variables system-wide
-  copy:
-    dest: /etc/profile.d/go.sh
-    content: |
-      export PATH=/usr/local/go/bin:$PATH
-      export GOPATH=$HOME/go
-      export GOBIN=$GOPATH/bin
-    mode: '0755'
-    owner: root
-    group: root
-  become: yes
-
-# -------- BASE SYSTEM SETUP --------
-
-- name: Enable UFW firewall
-  ufw:
-    state: enabled
-    policy: deny
-  become: yes
-
-- name: Allow OpenSSH through UFW
-  ufw:
-    rule: allow
-    name: OpenSSH
-  become: yes
-
-- name: Set timezone to UTC
-  timezone:
-    name: Etc/UTC
-  become: yes
-
-- name: Create base directory for Primea
+- name: Ensure correct ownership on /opt/primea (after snapshot)
   file:
     path: /opt/primea
-    state: directory
     owner: superuser
     group: superuser
-    mode: '0755'
+    recurse: yes
   become: yes
 
-# -------- SSH SETUP FOR GITHUB ACCESS --------
+- name: Pull latest PrimeaChain repo (in case of genesis updates)
+  git:
+    repo: git@github.com:primeanetwork/primeachain.git
+    dest: /opt/primea/primeachain
+    version: main
+    update: yes
+  become: yes
+  become_user: superuser
 
-- name: Ensure .ssh directory exists for superuser
+- name: Verify testnet genesis file exists
+  stat:
+    path: /opt/primea/primeachain/ansible/files/testnet-genesis.json
+  register: genesis_check
+
+- name: Fail if genesis file is missing
+  fail:
+    msg: "testnet-genesis.json is missing in ansible/files/!"
+  when: not genesis_check.stat.exists
+
+- name: Delete previous chain data (safe for public RPC)
   file:
-    path: /home/superuser/.ssh
-    state: directory
-    owner: superuser
-    group: superuser
-    mode: '0700'
+    path: /opt/primea/primeachain/bsc-core/data
+    state: absent
   become: yes
+  become_user: superuser
 
-- name: Upload GitHub private key from control host
-  copy:
-    src: github_id_rsa
-    dest: /home/superuser/.ssh/id_rsa
-    owner: superuser
-    group: superuser
-    mode: '0600'
+- name: Initialize geth with testnet genesis
+  shell: |
+    export PATH=/usr/local/go/bin:$PATH
+    /opt/primea/primeachain/bsc-core/build/bin/geth init \
+      --datadir=/opt/primea/primeachain/bsc-core/data \
+      /opt/primea/primeachain/ansible/files/testnet-genesis.json
+  args:
+    chdir: /opt/primea/primeachain/bsc-core
   become: yes
+  become_user: superuser
 
-- name: Upload GitHub public key from control host
-  copy:
-    src: github_id_rsa.pub
-    dest: /home/superuser/.ssh/id_rsa.pub
-    owner: superuser
-    group: superuser
-    mode: '0644'
-  become: yes
+- name: Check if chain was initialized
+  stat:
+    path: /opt/primea/primeachain/bsc-core/data/geth
+  register: chain_data_check
 
-- name: Create empty known_hosts file if missing
-  copy:
-    content: ""
-    dest: /home/superuser/.ssh/known_hosts
-    owner: superuser
-    group: superuser
-    mode: '0644'
-    force: no
-  become: yes
+- name: Fail if Geth chain was not initialized properly
+  fail:
+    msg: "Geth data directory was not created. Init failed."
+  when: not chain_data_check.stat.exists
 
-- name: Set correct owner on known_hosts (prevent SSH warnings)
-  file:
-    path: /home/superuser/.ssh/known_hosts
-    owner: superuser
-    group: superuser
-    mode: '0644'
-  become: yes
-
-- name: Add GitHub to known_hosts to avoid SSH prompt
-  known_hosts:
-    path: /home/superuser/.ssh/known_hosts
-    name: github.com
-    key: "{{ lookup('pipe', 'ssh-keyscan -t rsa github.com') }}"
-    state: present
-  become: yes
-
-- name: Show public key for manual GitHub verification
-  command: cat /home/superuser/.ssh/id_rsa.pub
-  register: github_key_output
-  changed_when: false
-  become: yes
-
-- name: Print public key (copy this into GitHub if needed)
+- name: ✅ Geth initialization successful
   debug:
-    msg: "{{ github_key_output.stdout }}"
-
-- name: Test GitHub SSH access from target node
-  shell: ssh -o StrictHostKeyChecking=no -T git@github.com 2>&1 || true
-  register: ssh_test_output
-  changed_when: false
-  become: false
-
-- name: Print GitHub SSH test result
-  debug:
-    var: ssh_test_output.stdout_lines
+    msg: "✅ Geth testnet chain initialized on this node."
