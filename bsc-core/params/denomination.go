@@ -17,14 +17,16 @@
 package params
 
 // These are the multipliers for GOLDPN denominations.
-// Example: to convert 1 mGOLDPN to attoGOLDPN:
+// But actually these are the multipliers for Ethereum denominations. (for less maintenance and compatibility with other Ethereum-based projects, we kept the same names)
+// Example: to convert 1 GWei to Wei:
 //
-//     new(big.Int).Mul(value, big.NewInt(params.mGOLDPN))
+//     new(big.Int).Mul(value, big.NewInt(params.GWei))
 
 const (
-	attoGOLDPN = 1
-	mGOLDPN    = 1e9
-	GOLDPN     = 1e18
+    Wei   = 1
+    GWei  = 1e9
+    Ether = 1e18
 )
+
 
 
