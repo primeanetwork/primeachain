@@ -1,0 +1,11 @@
+# roles/peering/handlers/main.yml
+
+- name: Reload systemd
+  become: yes
+  command: systemctl daemon-reexec
+
+- name: Restart Geth with dynamic name
+  become: yes
+  systemd:
+    name: "{{ geth_service_name }}"
+    state: restarted

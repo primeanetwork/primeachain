@@ -1,14 +1,45 @@
 ---
-# Phase 5 - Pull enodes from all Geth nodes (validators + RPCs)
+# Phase 5 - Pull enodes and inject peer topology
 
-- name: Phase 5 - Collect enodes from all nodes
+- name: Phase 5 - Pull enodes from all Geth nodes
   hosts:
     - public_rpc_nodes
     - private_rpc_nodes
     - validators
   become: yes
+  gather_facts: yes
   vars:
     ansible_user: superuser
-  roles:
-    - role: peering
-      tasks_from: pull_enodes
+  tasks:
+    - name: Include task to pull enode from all nodes
+      include_tasks: roles/peering/tasks/pull_enodes.yml
+
+- name: Phase 5 - Inject peers into public RPC nodes
+  hosts: public_rpc_nodes
+  become: yes
+  gather_facts: yes
+  vars:
+    ansible_user: superuser
+  tasks:
+    - name: Include task to inject peers into public RPC
+      include_tasks: roles/peering/tasks/inject_peers_public_rpc.yml
+
+- name: Phase 5 - Inject peers into private RPC nodes
+  hosts: private_rpc_nodes
+  become: yes
+  gather_facts: yes
+  vars:
+    ansible_user: superuser
+  tasks:
+    - name: Include task to inject peers into private RPC
+      include_tasks: roles/peering/tasks/inject_peers_private_rpc.yml
+
+- name: Phase 5 - Inject peers and keys into validator nodes
+  hosts: validators
+  become: yes
+  gather_facts: yes
+  vars:
+    ansible_user: superuser
+  tasks:
+    - name: Include task to inject peers and wallet keys into validators
+      include_tasks: roles/peering/tasks/inject_peers_validators.yml

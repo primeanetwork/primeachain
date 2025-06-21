@@ -1,5 +1,6 @@
 # roles/peering/tasks/pull_enodes.yml
 
+---
 - name: Create local directory for enode results
   delegate_to: localhost
   run_once: true
@@ -12,7 +13,7 @@
   shell: >
     echo "admin.nodeInfo.enode" |
     /opt/primea/primeachain/bsc-core/build/bin/geth attach /opt/primea/primeachain/bsc-core/data/geth.ipc |
-    grep -oE 'enode://[^\"]+'
+    grep -oE 'enode://[^"]+'
   register: enode_result
   changed_when: false
   failed_when: enode_result.rc != 0 or enode_result.stdout == ""
@@ -26,3 +27,4 @@
 - name: Show enode string
   debug:
     msg: "Host {{ inventory_hostname }} enode: {{ enode_result.stdout }}"
+

@@ -1,0 +1,68 @@
+---
+# Inject static-nodes into Private RPC Geth service and restart
+
+- name: Set service name for private RPC
+  set_fact:
+    geth_service_name: geth-priv-rpc
+
+- name: Read all enode files from artifacts directory
+  delegate_to: localhost
+  find:
+    paths: "{{ playbook_dir }}/artifacts/phase5"
+    patterns: "*.enode"
+  register: enode_files
+
+- name: Load enode contents into a list
+  delegate_to: localhost
+  slurp:
+    src: "{{ item.path }}"
+  loop: "{{ enode_files.files }}"
+  register: enode_raw_list
+
+- name: Decode enodes into a list
+  set_fact:
+    all_enodes: "{{ enode_raw_list.results | map(attribute='content') | map('b64decode') | list }}"
+
+- name: Join all enodes into bootnodes string
+  set_fact:
+    bootnodes_line: "--bootnodes={{ all_enodes | join(',') }}"
+
+- name: Backup current systemd unit file for safety
+  copy:
+    src: "/etc/systemd/system/{{ geth_service_name }}.service"
+    dest: "/etc/systemd/system/{{ geth_service_name }}.service.backup"
+    remote_src: true
+    force: yes
+
+- name: Inject bootnodes line above --nat in ExecStart (Private RPC)
+  lineinfile:
+    path: /etc/systemd/system/geth-priv-rpc.service
+    insertbefore: '^\s*--nat\s'
+    line: "  {{ bootnodes_line }}"
+    state: present
+
+
+- name: Reload systemd daemons
+  shell: |
+    systemctl daemon-reload
+    systemctl daemon-reexec
+
+- name: Enable and start Geth service
+  systemd:
+    name: "{{ geth_service_name }}"
+    enabled: true
+    state: started
+
+- name: Wait 15 seconds after starting Geth
+  pause:
+    seconds: 15
+
+- name: Check if Geth process is running
+  shell: pgrep -f '/opt/primea/primeachain/bsc-core/build/bin/geth --datadir'
+  register: geth_status
+  failed_when: geth_status.rc != 0
+  changed_when: false
+
+- name: Confirm Geth started successfully
+  debug:
+    msg: "Geth is running with PID(s): {{ geth_status.stdout_lines }}"
