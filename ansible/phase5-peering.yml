@@ -1,0 +1,11 @@
+---
+# Phase 5 - Pull enodes from all validators
+
+- name: Phase 5 - Collect enodes from validator nodes
+  hosts: validators
+  become: yes
+  vars:
+    ansible_user: superuser
+  roles:
+    - role: peering
+      tasks_from: pull_enodes

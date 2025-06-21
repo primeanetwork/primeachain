@@ -1,0 +1,20 @@
+# roles/peering/tasks/pull_enodes.yml
+
+- name: Create local directory for enode results
+  delegate_to: localhost
+  run_once: true
+  file:
+    path: artifacts/phase5
+    state: directory
+    mode: '0755'
+
+- name: Attach to Geth and extract enode string
+  shell: |
+    /opt/primea/primeachain/bsc-core/build/bin/geth attach /opt/primea/primeachain/bsc-core/data/geth.ipc --exec 'admin.nodeInfo.enode'
+  register: enode_output
+
+- name: Save enode for this host to local file
+  delegate_to: localhost
+  copy:
+    dest: artifacts/phase5/{{ inventory_hostname }}.enode
+    content: "{{ enode_output.stdout }}"

@@ -1,8 +1,8 @@
 ---
 galaxy_info:
-  role_name: server_p[repping]
+  role_name: geth_and_init_genesis
   author: Rodrigo Herrera
-  description: Prep the servers before cloning and building
+  description: Initialize Geth with genesis block and start services
   license: MIT
   min_ansible_version: 2.9
 

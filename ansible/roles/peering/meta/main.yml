@@ -1,8 +1,8 @@
 ---
 galaxy_info:
-  role_name: service_and_start
+  role_name: peering
   author: Rodrigo Herrera
-  description: Start geth services and ensure they are running
+  description: Configure and manage peering services for PrimeaChain
   license: MIT
   min_ansible_version: 2.9
 
