@@ -21,4 +21,8 @@
   delegate_to: localhost
   copy:
     dest: "{{ playbook_dir }}/artifacts/phase5/{{ inventory_hostname }}.enode"
-    content: "{{ enode_output.stdout }}"
+    content: "{{ enode_result.stdout }}"
+
+- name: Show enode string
+  debug:
+    msg: "Host {{ inventory_hostname }} enode: {{ enode_result.stdout }}"
