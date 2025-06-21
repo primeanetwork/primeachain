@@ -1,15 +1,20 @@
 # roles/init-chain/tasks/start_priv_rpc.yml
 
 - name: Ensure no stray Geth processes before starting
-  shell: pkill -f '/opt/primea/primeachain/bsc-core/build/bin/geth' || true
-  ignore_errors: true
+  shell: pkill -f '/opt/primea/primeachain/bsc-core/build/bin/geth'
+  register: kill_result
+  failed_when: false
+  changed_when: false
 
-- name: Stop old geth-priv-rpc service (if exists)
+- name: Stop old geth-pub-rpc service (if exists)
   systemd:
-    name: geth-priv-rpc
+    name: geth-pub-rpc
     state: stopped
     enabled: false
-  ignore_errors: true
+    force: true
+  register: stop_result
+  failed_when: false
+  changed_when: false
 
 - name: Remove old systemd unit file (if exists)
   file:

@@ -1,15 +1,18 @@
-# roles/init-chain/tasks/start_validators.yml
-
 - name: Ensure no stray Geth processes before starting
-  shell: pkill -f '/opt/primea/primeachain/bsc-core/build/bin/geth' || true
-  ignore_errors: true
+  shell: pkill -f '/opt/primea/primeachain/bsc-core/build/bin/geth'
+  register: kill_result
+  failed_when: false
+  changed_when: false
 
 - name: Stop old geth-validator service (if exists)
   systemd:
     name: geth-validator
     state: stopped
     enabled: false
-  ignore_errors: true
+    force: true
+  register: stop_result
+  failed_when: false
+  changed_when: false
 
 - name: Remove old systemd unit file (if exists)
   file:
@@ -19,15 +22,7 @@
 - name: Determine NAT external IP based on hostname
   set_fact:
     node_nat_ip: >-
-      {% if inventory_hostname == 'validator-1' %}
-        192.168.249.4
-      {% elif inventory_hostname == 'validator-2' %}
-        192.168.249.5
-      {% elif inventory_hostname == 'validator-3' %}
-        192.168.249.6
-      {% else %}
-        127.0.0.1
-      {% endif %}
+      {% if inventory_hostname == 'validator-1' %}192.168.249.4{% elif inventory_hostname == 'validator-2' %}192.168.249.5{% elif inventory_hostname == 'validator-3' %}192.168.249.6{% else %}127.0.0.1{% endif %}
 
 - name: Create systemd service for geth-validator
   copy:
@@ -43,10 +38,6 @@
       ExecStart=/opt/primea/primeachain/bsc-core/build/bin/geth \
         --datadir /opt/primea/primeachain/bsc-core/data \
         --networkid 1698369 \
-        --mine \
-        --allow-insecure-unlock \
-        --unlock 0x0000000000000000000000000000000000000000 \
-        --password /opt/primea/validator-password.txt \
         --http \
         --http.addr "0.0.0.0" \
         --http.port 8545 \
@@ -83,3 +74,4 @@
 - name: Confirm Geth started successfully
   debug:
     msg: "Geth is running with PID(s): {{ geth_status.stdout_lines }}"
+
