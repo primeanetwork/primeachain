@@ -1,0 +1,6 @@
+---
+- name: Phase 2 - Clone and Build PrimeaChain
+  hosts: all
+  become: yes
+  roles:
+    - clone-and-build

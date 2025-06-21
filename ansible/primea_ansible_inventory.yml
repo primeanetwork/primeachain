@@ -1,0 +1,19 @@
+all:
+  vars:
+    ansible_user: superuser
+    ansible_python_interpreter: /usr/bin/python3
+
+  children:
+    publicrpc:
+      hosts:
+        192.168.249.2:
+
+    privaterpc:
+      hosts:
+        192.168.249.3:
+
+    validators:
+      hosts:
+        192.168.249.4:
+        192.168.249.5:
+        192.168.249.6:

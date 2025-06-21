@@ -1,0 +1,9 @@
+---
+galaxy_info:
+  role_name: clone_and_build
+  author: Rodrigo Herrera
+  description: Clone the PrimeaChain repo and compile geth
+  license: MIT
+  min_ansible_version: 2.9
+
+dependencies: []

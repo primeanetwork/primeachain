@@ -1,0 +1,42 @@
+---
+- name: Ensure destination directory exists
+  file:
+    path: /opt/primea
+    state: directory
+    owner: superuser
+    group: superuser
+    mode: '0755'
+  become: yes
+
+- name: Clone PrimeaChain repo
+  git:
+    repo: https://github.com/primeanetwork/primeachain
+    dest: /opt/primea/primeachain
+    version: main
+    update: yes
+  become: yes
+
+- name: Ensure Makefile exists
+  stat:
+    path: /opt/primea/primeachain/bsc-core/Makefile
+  register: makefile_check
+
+- name: Fail if Makefile is missing
+  fail:
+    msg: "Makefile not found at expected path! Check repo structure."
+  when: not makefile_check.stat.exists
+
+- name: Compile geth using make
+  make:
+    chdir: /opt/primea/primeachain/bsc-core
+    target: geth
+  become: yes
+
+- name: Check geth version
+  command: /opt/primea/primeachain/bsc-core/build/bin/geth version
+  register: geth_output
+  changed_when: false
+
+- name: Print compiled geth version
+  debug:
+    var: geth_output.stdout_lines
