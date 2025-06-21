@@ -60,3 +60,10 @@
 - name: ✅ Geth initialization successful
   debug:
     msg: "✅ Geth testnet chain initialized on this node."
+
+- name: Ensure superuser owns all Geth directories after init
+  file:
+    path: /opt/primea/primeachain/bsc-core
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    recurse: yes

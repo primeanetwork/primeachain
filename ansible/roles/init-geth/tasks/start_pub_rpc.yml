@@ -1,5 +1,9 @@
 # roles/init-chain/tasks/start_pub_rpc.yml
 
+- name: Ensure no stray Geth processes before starting
+  shell: pkill -f '/opt/primea/primeachain/bsc-core/build/bin/geth' || true
+  ignore_errors: true
+
 - name: Stop old geth-pub-rpc service (if exists)
   systemd:
     name: geth-pub-rpc
@@ -54,7 +58,7 @@
     seconds: 15
 
 - name: Check if Geth process is running
-  shell: pgrep -f 'geth.*--datadir'
+  shell: pgrep -f '/opt/primea/primeachain/bsc-core/build/bin/geth --datadir'
   register: geth_status
   failed_when: geth_status.rc != 0
   changed_when: false

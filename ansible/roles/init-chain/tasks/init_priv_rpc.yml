@@ -39,3 +39,10 @@
     ../ansible/files/testnet-genesis.json
   args:
     chdir: /opt/primea/primeachain/bsc-core
+
+- name: Ensure superuser owns all Geth directories after init
+  file:
+    path: /opt/primea/primeachain/bsc-core
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    recurse: yes
