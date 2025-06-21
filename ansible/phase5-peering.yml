@@ -1,8 +1,11 @@
 ---
-# Phase 5 - Pull enodes from all validators
+# Phase 5 - Pull enodes from all Geth nodes (RPC + validators)
 
-- name: Phase 5 - Collect enodes from validator nodes
-  hosts: validators
+- name: Phase 5 - Collect enodes from all nodes
+  hosts:
+    - public_rpc_nodes
+    - private_rpc_nodes
+    - validators
   become: yes
   vars:
     ansible_user: superuser

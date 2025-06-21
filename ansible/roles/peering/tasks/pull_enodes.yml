@@ -12,6 +12,8 @@
   shell: |
     /opt/primea/primeachain/bsc-core/build/bin/geth attach /opt/primea/primeachain/bsc-core/data/geth.ipc --exec 'admin.nodeInfo.enode'
   register: enode_output
+  failed_when: enode_output.rc != 0
+  changed_when: false
 
 - name: Save enode for this host to local file
   delegate_to: localhost
