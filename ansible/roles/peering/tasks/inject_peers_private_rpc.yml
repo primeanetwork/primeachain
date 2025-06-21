@@ -1,6 +1,21 @@
 ---
 # Inject static-nodes into Private RPC Geth service and restart
 
+- name: Ensure required ports are open on private RPC node
+  become: yes
+  ufw:
+    rule: allow
+    port: "{{ item.port }}"
+    proto: "{{ item.proto }}"
+  loop:
+    - { port: 30303, proto: "tcp" }
+    - { port: 30303, proto: "udp" }
+    - { port: 8545, proto: "tcp" }
+    - { port: 8546, proto: "tcp" }
+  loop_control:
+    label: "{{ item.port }}/{{ item.proto }}"
+  when: "'private_rpc_nodes' in group_names"
+
 - name: Set service name for private RPC
   set_fact:
     geth_service_name: geth-priv-rpc
@@ -19,13 +34,31 @@
   loop: "{{ enode_files.files }}"
   register: enode_raw_list
 
+- name: Read enode file contents
+  delegate_to: localhost
+  slurp:
+    src: "{{ item.path }}"
+  with_items: "{{ enode_files.files }}"
+  register: slurped_enodes
+
+- name: Set enode list fact
+  delegate_to: localhost
+  set_fact:
+    enode_list: "{{ slurped_enodes.results | map(attribute='content') | map('b64decode') | list }}"
+
+- name: Inject static-nodes.json
+  copy:
+    dest: /opt/primea/primeachain/bsc-core/data/geth/static-nodes.json
+    content: "{{ enode_list | to_nice_json }}"
+    mode: '0644'
+
 - name: Decode enodes into a list
   set_fact:
     all_enodes: "{{ enode_raw_list.results | map(attribute='content') | map('b64decode') | list }}"
 
 - name: Join all enodes into bootnodes string
   set_fact:
-    bootnodes_line: "--bootnodes={{ all_enodes | join(',') }}"
+    bootnodes_line: "--bootnodes={{ all_enodes | join(',') }} \\"
 
 - name: Backup current systemd unit file for safety
   copy:

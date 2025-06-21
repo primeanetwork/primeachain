@@ -37,6 +37,8 @@
       WorkingDirectory=/opt/primea/primeachain/bsc-core
       ExecStart=/opt/primea/primeachain/bsc-core/build/bin/geth \
         --datadir /opt/primea/primeachain/bsc-core/data \
+        --syncmode full \
+        --port 30303 \
         --networkid 1698369 \
         --http \
         --http.addr "0.0.0.0" \
@@ -45,6 +47,7 @@
         --http.api "eth,web3,net,admin,miner" \
         --metrics \
         --pprof \
+        --verbosity 3 \
         --nat "extip:{{ node_nat_ip }}"
       Restart=always
       RestartSec=5

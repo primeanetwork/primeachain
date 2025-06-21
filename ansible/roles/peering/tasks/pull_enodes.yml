@@ -1,6 +1,5 @@
 # roles/peering/tasks/pull_enodes.yml
 
----
 - name: Create local directory for enode results
   delegate_to: localhost
   run_once: true

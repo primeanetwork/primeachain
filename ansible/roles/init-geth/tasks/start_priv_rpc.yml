@@ -34,14 +34,21 @@
       WorkingDirectory=/opt/primea/primeachain/bsc-core
       ExecStart=/opt/primea/primeachain/bsc-core/build/bin/geth \
         --datadir /opt/primea/primeachain/bsc-core/data \
+        --syncmode full \
+        --port 30303 \
         --networkid 1698369 \
         --http \
         --http.addr "0.0.0.0" \
         --http.port 8545 \
         --http.vhosts "*" \
         --http.api "eth,web3,net,admin" \
+        --ws \
+        --ws.addr "0.0.0.0" \
+        --ws.port 8546 \
+        --ws.api "eth,web3,net" \
         --metrics \
         --pprof \
+        --verbosity 3 \
         --nat "extip:192.168.249.3"
       Restart=always
       RestartSec=5

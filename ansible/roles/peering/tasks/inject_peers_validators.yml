@@ -1,6 +1,19 @@
 ---
 # Inject static-nodes and wallet key into validators + restart
 
+- name: Ensure required ports are open on validator nodes
+  become: yes
+  ufw:
+    rule: allow
+    port: "{{ item.port }}"
+    proto: "{{ item.proto }}"
+  loop:
+    - { port: 30303, proto: "tcp" }
+    - { port: 30303, proto: "udp" }
+  loop_control:
+    label: "{{ item.port }}/{{ item.proto }}"
+  when: "'validator_nodes' in group_names"
+
 - name: Read all enode files from artifacts directory
   delegate_to: localhost
   find:
@@ -14,6 +27,24 @@
     src: "{{ item.path }}"
   loop: "{{ enode_files.files }}"
   register: enode_raw_list
+
+- name: Read enode file contents
+  delegate_to: localhost
+  slurp:
+    src: "{{ item.path }}"
+  with_items: "{{ enode_files.files }}"
+  register: slurped_enodes
+
+- name: Set enode list fact
+  delegate_to: localhost
+  set_fact:
+    enode_list: "{{ slurped_enodes.results | map(attribute='content') | map('b64decode') | list }}"
+
+- name: Inject static-nodes.json
+  copy:
+    dest: /opt/primea/primeachain/bsc-core/data/geth/static-nodes.json
+    content: "{{ enode_list | to_nice_json }}"
+    mode: '0644'
 
 - name: Decode enodes into a list
   set_fact:
@@ -81,13 +112,34 @@
     remote_src: true
     force: yes
 
-- name: Inject bootnodes + unlock + password + allow-insecure-unlock above --nat
+- name: Inject bootnodes above --nat
   lineinfile:
     path: "/etc/systemd/system/{{ geth_service_name }}.service"
     insertbefore: '^\s*--nat\s'
-    line: "  {{ bootnodes_line }} --unlock={{ validator_metadata.address }} --password=/opt/primea/primeachain/bsc-core/password.txt --allow-insecure-unlock"
+    line: "  {{ bootnodes_line }} \\"
     state: present
 
+- name: Inject unlock above --nat
+  lineinfile:
+    path: "/etc/systemd/system/{{ geth_service_name }}.service"
+    insertbefore: '^\s*--nat\s'
+    line: "  --unlock={{ validator_metadata.address }} \\"
+    state: present
+    
+- name: Inject password above --nat
+  lineinfile:
+    path: "/etc/systemd/system/{{ geth_service_name }}.service"
+    insertbefore: '^\s*--nat\s'
+    line: "  --password=/opt/primea/primeachain/bsc-core/password.txt \\"
+    state: present
+    
+- name: Inject allow-insecure-unlock above --nat
+  lineinfile:
+    path: "/etc/systemd/system/{{ geth_service_name }}.service"
+    insertbefore: '^\s*--nat\s'
+    line: "  --allow-insecure-unlock \\"
+    state: present
+    
 - name: Reload systemd daemons
   shell: |
     systemctl daemon-reload
