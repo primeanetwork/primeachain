@@ -1,4 +1,6 @@
 ---
+# Phase 2 - Clone and Build Primea Geth Binary
+
 - name: Ensure destination directory exists
   file:
     path: /opt/primea
@@ -8,13 +10,21 @@
     mode: '0755'
   become: yes
 
-- name: Clone PrimeaChain repo
+- name: Clean old PrimeaChain repo if exists
+  file:
+    path: /opt/primea/primeachain
+    state: absent
+  become: yes
+
+- name: Clone PrimeaChain repo via SSH using host-forwarded key
   git:
-    repo: https://github.com/primeanetwork/primeachain
+    repo: git@github.com:primeanetwork/primeachain.git
     dest: /opt/primea/primeachain
     version: main
-    update: yes
+    update: no
+    force: yes
   become: yes
+  become_user: superuser
 
 - name: Ensure Makefile exists
   stat:
@@ -26,16 +36,38 @@
     msg: "Makefile not found at expected path! Check repo structure."
   when: not makefile_check.stat.exists
 
-- name: Compile geth using make
-  make:
+- name: Clean previous build artifacts
+  command: make clean
+  args:
     chdir: /opt/primea/primeachain/bsc-core
-    target: geth
   become: yes
+  become_user: superuser
+
+- name: Compile geth binary using make
+  command: make -j1 geth
+  args:
+    chdir: /opt/primea/primeachain/bsc-core
+  become: yes
+  become_user: superuser
+
+- name: Check if geth binary was built
+  stat:
+    path: /opt/primea/primeachain/bsc-core/build/bin/geth
+  register: geth_bin
+
+- name: Fail if geth binary is missing
+  fail:
+    msg: "geth binary was not built correctly!"
+  when: not geth_bin.stat.exists
 
 - name: Check geth version
-  command: /opt/primea/primeachain/bsc-core/build/bin/geth version
+  command: ./build/bin/geth version
+  args:
+    chdir: /opt/primea/primeachain/bsc-core
   register: geth_output
   changed_when: false
+  become: yes
+  become_user: superuser
 
 - name: Print compiled geth version
   debug:

@@ -33,9 +33,11 @@
     state: present
   become: yes
 
-- name: Download latest Go binary
+# -------- GO VERSION FIXED TO 1.20.13 --------
+
+- name: Download Go 1.20.13 binary
   get_url:
-    url: https://go.dev/dl/go1.21.6.linux-amd64.tar.gz
+    url: https://go.dev/dl/go1.20.13.linux-amd64.tar.gz
     dest: /tmp/go.tar.gz
     mode: '0644'
   become: yes
@@ -46,7 +48,7 @@
     state: absent
   become: yes
 
-- name: Extract Go archive to /usr/local
+- name: Extract Go 1.20.13 to /usr/local
   unarchive:
     src: /tmp/go.tar.gz
     dest: /usr/local
@@ -64,6 +66,8 @@
     owner: root
     group: root
   become: yes
+
+# -------- BASE SYSTEM SETUP --------
 
 - name: Enable UFW firewall
   ufw:
@@ -91,7 +95,7 @@
     mode: '0755'
   become: yes
 
-# --- SSH SETUP FOR GITHUB ACCESS (shared host key) ---
+# -------- SSH SETUP FOR GITHUB ACCESS --------
 
 - name: Ensure .ssh directory exists for superuser
   file:
@@ -151,11 +155,6 @@
   register: ssh_test_output
   changed_when: false
   become: false
-
-- name: Print GitHub SSH test result
-  debug:
-    msg: "{{ ssh_test_output.stdout_lines }}"
-
 
 - name: Print GitHub SSH test result
   debug:
