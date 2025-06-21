@@ -57,19 +57,13 @@
   copy:
     dest: /etc/profile.d/go.sh
     content: |
-      export PATH=$PATH:/usr/local/go/bin
+      export PATH=/usr/local/go/bin:$PATH
       export GOPATH=$HOME/go
       export GOBIN=$GOPATH/bin
     mode: '0755'
     owner: root
     group: root
   become: yes
-
-
-- name: Ensure Go is in PATH for the current shell
-  shell: "source /etc/profile.d/go.sh"
-  args:
-    executable: /bin/bash
 
 - name: Enable UFW firewall
   ufw:
@@ -96,3 +90,73 @@
     group: superuser
     mode: '0755'
   become: yes
+
+# --- SSH SETUP FOR GITHUB ACCESS (shared host key) ---
+
+- name: Ensure .ssh directory exists for superuser
+  file:
+    path: /home/superuser/.ssh
+    state: directory
+    owner: superuser
+    group: superuser
+    mode: '0700'
+  become: yes
+
+- name: Upload GitHub private key from control host
+  copy:
+    src: github_id_rsa
+    dest: /home/superuser/.ssh/id_rsa
+    owner: superuser
+    group: superuser
+    mode: '0600'
+  become: yes
+
+- name: Upload GitHub public key from control host
+  copy:
+    src: github_id_rsa.pub
+    dest: /home/superuser/.ssh/id_rsa.pub
+    owner: superuser
+    group: superuser
+    mode: '0644'
+  become: yes
+
+- name: Set correct owner on known_hosts (prevent SSH warnings)
+  file:
+    path: /home/superuser/.ssh/known_hosts
+    owner: superuser
+    group: superuser
+    mode: '0644'
+  become: yes
+
+- name: Add GitHub to known_hosts to avoid SSH prompt
+  known_hosts:
+    path: /home/superuser/.ssh/known_hosts
+    name: github.com
+    key: "{{ lookup('pipe', 'ssh-keyscan -t rsa github.com') }}"
+    state: present
+  become: yes
+
+- name: Show public key for manual GitHub verification
+  command: cat /home/superuser/.ssh/id_rsa.pub
+  register: github_key_output
+  changed_when: false
+  become: yes
+
+- name: Print public key (copy this into GitHub if needed)
+  debug:
+    msg: "{{ github_key_output.stdout }}"
+
+- name: Test GitHub SSH access from target node
+  shell: ssh -o StrictHostKeyChecking=no -T git@github.com 2>&1 || true
+  register: ssh_test_output
+  changed_when: false
+  become: false
+
+- name: Print GitHub SSH test result
+  debug:
+    msg: "{{ ssh_test_output.stdout_lines }}"
+
+
+- name: Print GitHub SSH test result
+  debug:
+    var: ssh_test_output.stdout_lines
