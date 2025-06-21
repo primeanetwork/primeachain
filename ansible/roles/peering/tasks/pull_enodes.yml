@@ -4,19 +4,21 @@
   delegate_to: localhost
   run_once: true
   file:
-    path: artifacts/phase5
+    path: "{{ playbook_dir }}/artifacts/phase5"
     state: directory
     mode: '0755'
 
-- name: Attach to Geth and extract enode string
-  shell: |
-    /opt/primea/primeachain/bsc-core/build/bin/geth attach /opt/primea/primeachain/bsc-core/data/geth.ipc --exec 'admin.nodeInfo.enode'
-  register: enode_output
-  failed_when: enode_output.rc != 0
+- name: Extract enode from running Geth node
+  shell: >
+    echo "admin.nodeInfo.enode" |
+    /opt/primea/primeachain/bsc-core/build/bin/geth attach /opt/primea/primeachain/bsc-core/data/geth.ipc |
+    grep -oE 'enode://[^\"]+'
+  register: enode_result
   changed_when: false
+  failed_when: enode_result.rc != 0 or enode_result.stdout == ""
 
 - name: Save enode for this host to local file
   delegate_to: localhost
   copy:
-    dest: artifacts/phase5/{{ inventory_hostname }}.enode
+    dest: "{{ playbook_dir }}/artifacts/phase5/{{ inventory_hostname }}.enode"
     content: "{{ enode_output.stdout }}"

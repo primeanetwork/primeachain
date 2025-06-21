@@ -1,5 +1,5 @@
 ---
-# Phase 5 - Pull enodes from all Geth nodes (RPC + validators)
+# Phase 5 - Pull enodes from all Geth nodes (validators + RPCs)
 
 - name: Phase 5 - Collect enodes from all nodes
   hosts:
