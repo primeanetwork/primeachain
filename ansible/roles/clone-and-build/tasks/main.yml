@@ -43,12 +43,15 @@
   become: yes
   become_user: superuser
 
-- name: Compile geth binary using make
-  command: make -j1 geth
+- name: Compile geth using make (with Go env loaded)
+  shell: |
+    export PATH=/usr/local/go/bin:$PATH
+    export GOPATH=$HOME/go
+    export GOBIN=$GOPATH/bin
+    make -j1 geth
   args:
     chdir: /opt/primea/primeachain/bsc-core
   become: yes
-  become_user: superuser
 
 - name: Check if geth binary was built
   stat:
@@ -61,13 +64,13 @@
   when: not geth_bin.stat.exists
 
 - name: Check geth version
-  command: ./build/bin/geth version
-  args:
-    chdir: /opt/primea/primeachain/bsc-core
+  shell: |
+    export PATH=/usr/local/go/bin:$PATH
+    /opt/primea/primeachain/bsc-core/build/bin/geth version
   register: geth_output
   changed_when: false
   become: yes
-  become_user: superuser
+
 
 - name: Print compiled geth version
   debug:
