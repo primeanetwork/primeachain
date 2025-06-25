@@ -26,19 +26,49 @@
   fail:
     msg: "testnet-genesis.json not found"
   when: not genesis_file.stat.exists
-
-- name: Delete previous chain data (safe for validators)
+- name: Delete previous chain data
   file:
     path: /opt/primea/primeachain/bsc-core/data
     state: absent
+  become: yes
+  become_user: superuser
 
 - name: Initialize Geth with testnet genesis
-  command: >
-    /opt/primea/primeachain/bsc-core/build/bin/geth
-    init --datadir=data
-    ../ansible/files/testnet-genesis.json
+  shell: |
+    export PATH=/usr/local/go/bin:$PATH
+    /opt/primea/primeachain/bsc-core/build/bin/geth init \
+      --datadir=/opt/primea/primeachain/bsc-core/data \
+      /opt/primea/primeachain/ansible/files/testnet-genesis.json
   args:
     chdir: /opt/primea/primeachain/bsc-core
+  become: yes
+  become_user: superuser
+
+- name: Check if chain was initialized
+  stat:
+    path: /opt/primea/primeachain/bsc-core/data/geth
+  register: chain_data_check
+
+- name: Fail if Geth chain was not initialized properly
+  fail:
+    msg: "Geth data directory was not created. Init failed."
+  when: not chain_data_check.stat.exists
+
+- name: ✅ Geth initialization successful
+  debug:
+    msg: "✅ Geth testnet chain initialized on {{ inventory_hostname }}."
+
+- name: Print Genesis Block Hash
+  command: >
+    /opt/primea/primeachain/bsc-core/build/bin/geth
+    inspect /opt/primea/primeachain/bsc-core/testnet-genesis.json
+  register: genesis_inspect
+  changed_when: false
+  ignore_errors: true
+
+- name: Display Genesis Hash
+  debug:
+    msg: "Genesis Hash for {{ inventory_hostname }}: {{ genesis_inspect.stdout }}"
 
 - name: Ensure superuser owns all Geth directories after init
   file:
@@ -46,3 +76,4 @@
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
     recurse: yes
+

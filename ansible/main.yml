@@ -1,0 +1,6 @@
+---
+- import_playbook: phase1-server-prepping.yml
+- import_playbook: phase2-clone-and-build.yml
+- import_playbook: phase3-start-chain.yml
+- import_playbook: phase4-start-service.yml
+- import_playbook: phase5-peering.yml
