@@ -3,3 +3,5 @@ ansible/files/github_id_rsa.pub
 ansible/files/keys/UTC--2025-02-20T09-07-16.273603895Z--c79de6a1eefaa4325b71590585b4b056b0750e97
 ansible/files/keys/UTC--2025-02-20T09-08-00.773404193Z--2c1eb859b739829ea7d3b99f4445710efbed2017
 ansible/files/keys/UTC--2025-02-20T09-07-40.434141001Z--ceb07760b2b9797b7e31cfd648f7302925c28d58
+bsc-core/data/*
+*.enode
