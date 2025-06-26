@@ -1,0 +1,153 @@
+---
+- name: Install required packages
+  apt:
+    name:
+      - nginx
+      - certbot
+      - python3-certbot-nginx
+    state: present
+    update_cache: yes
+
+- name: Allow HTTP and HTTPS ports in firewall
+  ufw:
+    rule: allow
+    port: "{{ item }}"
+  loop:
+    - "80"
+    - "443"
+
+- name: Step 1 - Write temporary HTTP-only reverse proxy
+  copy:
+    dest: /etc/nginx/sites-available/rpc_reverse_proxy
+    content: |
+      server {
+          listen 80;
+          server_name {{ domain_name }};
+
+          location / {
+              proxy_pass http://127.0.0.1:8545;
+              proxy_http_version 1.1;
+              proxy_set_header Upgrade $http_upgrade;
+              proxy_set_header Connection 'upgrade';
+              proxy_set_header Host $host;
+              proxy_cache_bypass $http_upgrade;
+              add_header Access-Control-Allow-Origin *;
+              add_header Access-Control-Allow-Methods "GET, POST, OPTIONS";
+              add_header Access-Control-Allow-Headers "Origin, Content-Type, Accept, Authorization";
+          }
+      }
+
+- name: Enable temporary HTTP config
+  file:
+    src: /etc/nginx/sites-available/rpc_reverse_proxy
+    dest: /etc/nginx/sites-enabled/rpc_reverse_proxy
+    state: link
+    force: yes
+
+- name: Remove default site
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+
+- name: Reload NGINX (initial, to make sure config is valid)
+  service:
+    name: nginx
+    state: reloaded
+
+- name: Step 2 - Obtain SSL certificate using HTTP mode
+  shell: |
+    certbot --nginx --non-interactive --agree-tos \
+      -m primeanetwork@proton.me \
+      -d {{ domain_name }}
+  register: certbot_output
+  changed_when: "'Congratulations' in certbot_output.stdout"
+
+- name: 🔐 Show certbot result
+  debug:
+    msg: "{{ certbot_output.stdout }}"
+
+- name: Step 3 - Overwrite with final dual HTTP+HTTPS config
+  copy:
+    dest: /etc/nginx/sites-available/rpc_reverse_proxy
+    content: |
+      server {
+          listen 80;
+          server_name {{ domain_name }};
+
+          location / {
+              proxy_pass http://127.0.0.1:8545;
+              proxy_http_version 1.1;
+              proxy_set_header Upgrade $http_upgrade;
+              proxy_set_header Connection 'upgrade';
+              proxy_set_header Host $host;
+              proxy_cache_bypass $http_upgrade;
+              add_header Access-Control-Allow-Origin *;
+              add_header Access-Control-Allow-Methods "GET, POST, OPTIONS";
+              add_header Access-Control-Allow-Headers "Origin, Content-Type, Accept, Authorization";
+          }
+      }
+
+      server {
+          listen 443 ssl;
+          server_name {{ domain_name }};
+
+          ssl_certificate /etc/letsencrypt/live/{{ domain_name }}/fullchain.pem;
+          ssl_certificate_key /etc/letsencrypt/live/{{ domain_name }}/privkey.pem;
+
+          location / {
+              proxy_pass http://127.0.0.1:8545;
+              proxy_http_version 1.1;
+              proxy_set_header Upgrade $http_upgrade;
+              proxy_set_header Connection 'upgrade';
+              proxy_set_header Host $host;
+              proxy_cache_bypass $http_upgrade;
+              add_header Access-Control-Allow-Origin *;
+              add_header Access-Control-Allow-Methods "GET, POST, OPTIONS";
+              add_header Access-Control-Allow-Headers "Origin, Content-Type, Accept, Authorization";
+          }
+      }
+
+- name: Step 4 - Reload NGINX with SSL config
+  service:
+    name: nginx
+    state: reloaded
+
+- name: Ensure Certbot auto-renewal is scheduled
+  copy:
+    dest: /etc/cron.d/certbot
+    content: "0 3 * * * root certbot renew --quiet\n"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Check if Certbot systemd timer is active
+  command: systemctl is-enabled certbot.timer
+  register: certbot_timer_status
+  failed_when: false
+  changed_when: false
+
+- name: Enable Certbot systemd timer if not active
+  systemd:
+    name: certbot.timer
+    enabled: yes
+    state: started
+  when: certbot_timer_status.stdout != "enabled"
+
+- name: 🔁 Display Certbot timer status
+  debug:
+    msg: "Certbot timer status: {{ certbot_timer_status.stdout }}"
+
+- name: Optional - Add security headers to NGINX reverse proxy
+  blockinfile:
+    path: /etc/nginx/sites-available/rpc_reverse_proxy
+    marker: "# {mark} SECURITY HEADERS"
+    insertafter: 'add_header Access-Control-Allow-Headers.*'
+    block: |
+      add_header X-Frame-Options "SAMEORIGIN";
+      add_header X-XSS-Protection "1; mode=block";
+      add_header X-Content-Type-Options "nosniff";
+
+- name: Reload NGINX after updating headers
+  service:
+    name: nginx
+    state: reloaded

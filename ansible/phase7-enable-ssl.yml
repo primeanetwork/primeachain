@@ -1,0 +1,11 @@
+# Phase 7 - Set up SSL and NGINX reverse proxy for public RPC
+---
+- name: Phase 7 - Set up SSL and NGINX reverse proxy for public RPC
+  hosts: public_rpc_nodes
+  become: yes
+  gather_facts: yes
+  vars:
+    domain_name: "rpc.testnet.primeanetwork.com"
+    ansible_user: superuser
+  roles:
+    - role: ssl-nginx-reverse-proxy

@@ -1,0 +1,91 @@
+---
+- name: Phase 6 | Set validator metadata (for etherbase injection)
+  set_fact:
+    validator_metadata: >-
+      {{
+        {
+          'validator-1': {
+            'address': '0xc79de6a1eefaa4325b71590585b4b056b0750e97'
+          },
+          'validator-2': {
+            'address': '0xceb07760b2b9797b7e31cfd648f7302925c28d58'
+          },
+          'validator-3': {
+            'address': '0x2c1eb859b739829ea7d3b99f4445710efbed2017'
+          }
+        }[inventory_hostname]
+      }}
+
+- name: Phase 6 | Add --mine flag after allow-insecure-unlock
+  blockinfile:
+    path: "/etc/systemd/system/geth-validator.service"
+    insertafter: '^\s*--allow-insecure-unlock\s*\\$'
+    block: |
+      --mine \
+      --miner.etherbase={{ validator_metadata.address }} \
+    marker: "# {mark} MINING FLAGS"
+  
+- name: Phase 6 | Reload systemd to apply mining flag changes
+  command: systemctl daemon-reload
+
+- name: Phase 6 | Restart geth-validator to activate mining
+  systemd:
+    name: geth-validator.service
+    state: restarted
+    enabled: true
+
+
+- name: Phase 6 | ✅ Mining enabled
+  debug:
+    msg: "Injected --mine and etherbase for {{ inventory_hostname }}: {{ validator_metadata.address }}"
+
+- name: Phase 6 | Wait 15 seconds for block production
+  pause:
+    seconds: 15
+
+- name: Phase 6 | 🔢 Check eth.blockNumber after 15s
+  shell: |
+    /opt/primea/primeachain/bsc-core/build/bin/geth attach /opt/primea/primeachain/bsc-core/data/geth.ipc <<EOF
+    eth.blockNumber
+    exit
+    EOF
+  register: block_15s
+  changed_when: false
+
+- name: Phase 6 | ⛓️ Block number at 15 seconds
+  debug:
+    msg: "Block number after 15s on {{ inventory_hostname }}: {{ block_15s.stdout_lines }}"
+
+- name: Phase 6 | Wait 60 seconds for next check
+  pause:
+    seconds: 60
+
+- name: Phase 6 | 🔢 Check eth.blockNumber after 60s
+  shell: |
+    /opt/primea/primeachain/bsc-core/build/bin/geth attach /opt/primea/primeachain/bsc-core/data/geth.ipc <<EOF
+    eth.blockNumber
+    exit
+    EOF
+  register: block_60s
+  changed_when: false
+
+- name: Phase 6 | ⛓️ Block number at 60 seconds
+  debug:
+    msg: "Block number after 60s on {{ inventory_hostname }}: {{ block_60s.stdout_lines }}"
+
+- name: Phase 6 | Wait 300 seconds for final check
+  pause:
+    seconds: 300
+
+- name: Phase 6 | 🔢 Check eth.blockNumber after 5 minutes
+  shell: |
+    /opt/primea/primeachain/bsc-core/build/bin/geth attach /opt/primea/primeachain/bsc-core/data/geth.ipc <<EOF
+    eth.blockNumber
+    exit
+    EOF
+  register: block_300s
+  changed_when: false
+
+- name: Phase 6 | ⛓️ Block number at 5 minutes
+  debug:
+    msg: "Block number after 5min on {{ inventory_hostname }}: {{ block_300s.stdout_lines }}"

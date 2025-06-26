@@ -61,18 +61,6 @@
   debug:
     msg: "✅ Geth testnet chain initialized on {{ inventory_hostname }}."
 
-- name: Print Genesis Block Hash
-  command: >
-    /opt/primea/primeachain/bsc-core/build/bin/geth
-    inspect /opt/primea/primeachain/bsc-core/testnet-genesis.json
-  register: genesis_inspect
-  changed_when: false
-  ignore_errors: true
-
-- name: Display Genesis Hash
-  debug:
-    msg: "Genesis Hash for {{ inventory_hostname }}: {{ genesis_inspect.stdout }}"
-
 - name: Ensure superuser owns all Geth directories after init
   file:
     path: /opt/primea/primeachain/bsc-core

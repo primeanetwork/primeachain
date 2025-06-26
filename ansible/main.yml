@@ -4,3 +4,5 @@
 - import_playbook: phase3-start-chain.yml
 - import_playbook: phase4-start-service.yml
 - import_playbook: phase5-peering.yml
+- import_playbook: phase6-start-mining.yml
+- import_playbook: phase7-enable-ssl.yml

@@ -42,6 +42,7 @@
         --http.port 8545 \
         --http.vhosts "*" \
         --http.api "eth,web3,net,admin" \
+        --http.corsdomain="*" \
         --ws \
         --ws.addr "0.0.0.0" \
         --ws.port 8546 \

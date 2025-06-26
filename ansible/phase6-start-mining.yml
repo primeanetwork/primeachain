@@ -1,0 +1,12 @@
+---
+# Phase 6 - Inject --mine and --miner.etherbase into validators
+
+- name: Phase 6 - Start mining on validator nodes
+  hosts: validators
+  become: yes
+  gather_facts: yes
+  vars:
+    ansible_user: superuser
+  tasks:
+    - name: Include task to inject mining flags
+      include_tasks: roles/start-mining/tasks/start_mining.yml

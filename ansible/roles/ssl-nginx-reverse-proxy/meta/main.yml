@@ -1,0 +1,9 @@
+---
+galaxy_info:
+  role_name: service_and_start
+  author: Rodrigo Herrera
+  description: Start geth services and ensure they are running
+  license: MIT
+  min_ansible_version: 2.9
+
+dependencies: []
